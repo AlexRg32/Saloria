@@ -46,3 +46,4 @@ yarn-error.log*
 ### Docker ###
 .docker/
 data/
+.gstack/
