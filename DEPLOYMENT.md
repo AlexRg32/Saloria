@@ -22,6 +22,17 @@ Esta guía detalla los pasos para desplegar la aplicación de forma gratuita.
    - `SPRING_DATASOURCE_PASSWORD`: Tu contraseña de Supabase.
    - `CORS_ALLOWED_ORIGINS`: La URL que te dé Vercel (ej: `https://tu-app.vercel.app`).
 
+### Alternativa: Backend en Raspberry Pi
+
+Si quieres evitar el sleep del plan free de Render, el repositorio ya incluye una ruta self-hosted en [`deploy/raspberry/README.md`](./deploy/raspberry/README.md).
+
+Recomendacion:
+
+1. Mantener la base de datos en Supabase al principio.
+2. Mover solo la API Spring Boot a la Raspberry.
+3. Publicar la API con Cloudflare Tunnel o, si prefieres, con Caddy + DDNS.
+4. Cambiar en Vercel `VITE_API_BASE_URL` al nuevo dominio HTTPS de la Raspberry.
+
 ## 3. Frontend (React en Vercel)
 
 1. Ve a [Vercel](https://vercel.com/) y crea un nuevo proyecto.
@@ -29,6 +40,7 @@ Esta guía detalla los pasos para desplegar la aplicación de forma gratuita.
 3. **Build Settings**: Vercel detectará que es Vite. No cambies nada.
 4. **Environment Variables**:
    - `VITE_API_BASE_URL`: La URL que te dé Render (ej: `https://peluqueria-api.onrender.com`).
+   - Si migras el backend a Raspberry: `https://api.tudominio.com`
 
 ---
 

@@ -47,3 +47,5 @@ yarn-error.log*
 .docker/
 data/
 .gstack/
+deploy/raspberry/.env.prod
+deploy/raspberry/backups/

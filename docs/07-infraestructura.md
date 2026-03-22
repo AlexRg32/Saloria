@@ -195,4 +195,39 @@ El flujo de trabajo sigue el modelo de promoción de entornos:
 - El backend de producción público es `peluqueria-saas-prod-fra.onrender.com`.
 - Hay servicios antiguos en Oregon suspendidos por el usuario que conviene no confundir con la infraestructura activa actual.
 
+## 🍓 Opción Self-Hosted: Raspberry Pi
+
+El repositorio incluye una alternativa de despliegue self-hosted para mover el backend a una Raspberry Pi sin cambiar la arquitectura funcional de la app.
+
+### Objetivo recomendado
+
+- **Fase 1**: mover solo el backend a la Raspberry Pi y mantener **Supabase** como base de datos.
+- **Fase 2**: mover PostgreSQL a la Raspberry solo cuando el despliegue de la API este estable y haya almacenamiento persistente adecuado.
+
+### Motivo
+
+Esta estrategia elimina el cold start de Render sin meter en el mismo cambio:
+
+- migracion de red publica
+- migracion de datos
+- cambios de storage
+- backups y recuperacion de PostgreSQL
+
+### Archivos de despliegue
+
+La configuracion se encuentra en [`deploy/raspberry/README.md`](../deploy/raspberry/README.md) e incluye:
+
+- `docker-compose.prod.yml`
+- `.env.prod.example`
+- `Caddyfile`
+- `cloudflared/config.yml`
+- scripts de bootstrap, healthcheck y backup/restore
+
+### Consideraciones operativas
+
+- **No exponer PostgreSQL** a Internet.
+- **Cloudflare Tunnel** es la opcion preferida si el router o el ISP complican el port forwarding.
+- Si PostgreSQL vive en Raspberry, conviene **SSD externo** en lugar de tarjeta SD.
+- El frontend en Vercel solo necesita cambiar `VITE_API_BASE_URL` al nuevo dominio HTTPS de la API.
+
 > [Siguiente: Guía de Contribución](./08-guia-contribucion.md)
