@@ -17,14 +17,17 @@ public class DatabaseConfig {
 
   private static final Logger logger = LoggerFactory.getLogger(DatabaseConfig.class);
 
-  @Value("${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/peluqueria_db}")
+  @Value("${spring.datasource.url:jdbc:postgresql://localhost:5433/peluqueria_db}")
   private String datasourceUrl;
 
-  @Value("${SPRING_DATASOURCE_USERNAME:postgres}")
+  @Value("${spring.datasource.username:postgres}")
   private String username;
 
-  @Value("${SPRING_DATASOURCE_PASSWORD:postgres}")
+  @Value("${spring.datasource.password:postgres}")
   private String password;
+
+  @Value("${spring.datasource.driver-class-name:org.postgresql.Driver}")
+  private String driverClassName;
 
   @Bean
   @Primary
@@ -105,7 +108,7 @@ public class DatabaseConfig {
         .url(workingUrl)
         .username(user)
         .password(pass)
-        .driverClassName("org.postgresql.Driver")
+        .driverClassName(driverClassName)
         .build();
   }
 }

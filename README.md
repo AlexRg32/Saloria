@@ -108,6 +108,14 @@ npm install
 npm run dev
 ```
 
+### 🍓 Opción Self-Hosted en Raspberry Pi
+
+El repositorio incluye una ruta de despliegue para ejecutar el backend en una Raspberry Pi y mantener el frontend en Vercel.
+
+- Guía operativa: [`deploy/raspberry/README.md`](./deploy/raspberry/README.md)
+- Objetivo recomendado: mover primero solo la API para eliminar el cold start de Render
+- Base de datos: mantener Supabase al inicio y migrar PostgreSQL a la Raspberry solo en una segunda fase
+
 ---
 
 ## 🧪 Datos de Prueba (Seeding)
