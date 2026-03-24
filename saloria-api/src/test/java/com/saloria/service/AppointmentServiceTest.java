@@ -2,18 +2,19 @@ package com.saloria.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.Collections;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.access.AccessDeniedException;
 
 import com.saloria.dto.AppointmentResponse;
 import com.saloria.dto.CreateAppointmentRequest;
@@ -21,6 +22,7 @@ import com.saloria.model.Appointment;
 import com.saloria.model.AppointmentStatus;
 import com.saloria.model.Customer;
 import com.saloria.model.Enterprise;
+import com.saloria.model.Role;
 import com.saloria.model.ServiceOffering;
 import com.saloria.model.User;
 import com.saloria.repository.AppointmentRepository;
@@ -62,10 +64,29 @@ public class AppointmentServiceTest {
     request.setCustomerName("Test Customer");
     request.setCustomerPhone("123456789");
 
-    User employee = User.builder().id(1L).name("Employee").build();
-    ServiceOffering service = ServiceOffering.builder().id(1L).name("Service").duration(30).price(10.0).build();
     Enterprise enterprise = Enterprise.builder().id(1L).name("Enterprise A").slug("enterprise-a").build();
-    Customer customer = Customer.builder().id(1L).name("Test Customer").phone("123456789").build();
+    User employee = User.builder()
+        .id(1L)
+        .name("Employee")
+        .role(Role.EMPLEADO)
+        .active(true)
+        .enterprise(enterprise)
+        .build();
+    ServiceOffering service = ServiceOffering.builder()
+        .id(1L)
+        .name("Service")
+        .duration(30)
+        .price(10.0)
+        .enterprise(enterprise)
+        .deleted(false)
+        .build();
+    Customer customer = Customer.builder()
+        .id(1L)
+        .name("Test Customer")
+        .phone("123456789")
+        .enterprise(enterprise)
+        .visitsCount(0)
+        .build();
 
     when(userRepository.findById(1L)).thenReturn(Optional.of(employee));
     when(serviceOfferingRepository.findById(1L)).thenReturn(Optional.of(service));
@@ -97,5 +118,42 @@ public class AppointmentServiceTest {
     assertEquals("Enterprise A", response.getEnterpriseName());
     assertEquals("enterprise-a", response.getEnterpriseSlug());
     assertEquals(1L, response.getEnterpriseId());
+  }
+
+  @Test
+  public void testCreateAppointmentRejectsCrossEnterpriseEmployee() {
+    CreateAppointmentRequest request = new CreateAppointmentRequest();
+    request.setEmployeeId(1L);
+    request.setServiceId(1L);
+    request.setEnterpriseId(1L);
+    request.setDate(LocalDateTime.now().plusDays(1));
+    request.setCustomerName("Test Customer");
+    request.setCustomerPhone("123456789");
+
+    Enterprise requestedEnterprise = Enterprise.builder().id(1L).name("Enterprise A").build();
+    Enterprise foreignEnterprise = Enterprise.builder().id(2L).name("Enterprise B").build();
+
+    User employee = User.builder()
+        .id(1L)
+        .name("Employee")
+        .role(Role.EMPLEADO)
+        .active(true)
+        .enterprise(foreignEnterprise)
+        .build();
+
+    ServiceOffering service = ServiceOffering.builder()
+        .id(1L)
+        .name("Service")
+        .duration(30)
+        .price(10.0)
+        .enterprise(requestedEnterprise)
+        .deleted(false)
+        .build();
+
+    when(userRepository.findById(1L)).thenReturn(Optional.of(employee));
+    when(serviceOfferingRepository.findById(1L)).thenReturn(Optional.of(service));
+    when(enterpriseRepository.findById(1L)).thenReturn(Optional.of(requestedEnterprise));
+
+    assertThrows(AccessDeniedException.class, () -> appointmentService.create(request));
   }
 }

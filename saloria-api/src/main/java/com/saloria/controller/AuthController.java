@@ -4,6 +4,7 @@ import com.saloria.dto.AuthRequest;
 import com.saloria.dto.AuthResponse;
 import com.saloria.dto.RegisterRequest;
 import com.saloria.service.AuthenticationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,14 +25,14 @@ public class AuthController {
   @Operation(summary = "Registrar nueva empresa", description = "Crea una nueva empresa junto con su cuenta de administrador inicial.")
   @PostMapping("/register")
   public ResponseEntity<AuthResponse> register(
-      @RequestBody RegisterRequest request) {
+      @Valid @RequestBody RegisterRequest request) {
     return ResponseEntity.ok(service.register(request));
   }
 
   @Operation(summary = "Iniciar sesión", description = "Autentica a un usuario usando email y contraseña, y devuelve el token JWT de acceso.")
   @PostMapping("/login")
   public ResponseEntity<AuthResponse> authenticate(
-      @RequestBody AuthRequest request) {
+      @Valid @RequestBody AuthRequest request) {
     return ResponseEntity.ok(service.authenticate(request));
   }
 }

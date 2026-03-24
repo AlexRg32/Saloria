@@ -95,6 +95,15 @@ Ejecuta una instancia de PostgreSQL o usa la que proporciona docker-compose.
 
 #### 2. Backend (`/saloria-api`)
 
+Antes de arrancar el backend define las variables obligatorias:
+
+```bash
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5433/saloria_db
+export SPRING_DATASOURCE_USERNAME=postgres
+export SPRING_DATASOURCE_PASSWORD=postgres
+export JWT_SECRET=dev-only-change-this-secret-before-sharing
+```
+
 ```bash
 cd saloria-api
 ./mvnw spring-boot:run
@@ -122,7 +131,7 @@ El repositorio incluye una ruta de despliegue para ejecutar el backend en una Ra
 
 Para ver la aplicación en acción con datos realistas (citas, clientes, estadísticas), el sistema incluye un mecanismo de carga de datos inicial.
 
-> *Nota: Actualmente configurado para cargarse automáticamente al iniciar en modo desarrollo.*
+> Nota: el bootstrap de `SUPER_ADMIN` ya no se crea automáticamente. Si necesitas una cuenta de emergencia para un entorno controlado, actívala de forma explícita con `APP_BOOTSTRAP_SUPERADMIN_ENABLED=true`, `APP_BOOTSTRAP_SUPERADMIN_EMAIL` y `APP_BOOTSTRAP_SUPERADMIN_PASSWORD`.
 
 ---
 

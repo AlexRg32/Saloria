@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
 import com.saloria.model.ServiceOffering;
+import com.saloria.dto.ServiceOfferingRequest;
 import com.saloria.dto.ServiceOfferingResponse;
 import com.saloria.repository.ServiceOfferingRepository;
 import com.saloria.repository.EnterpriseRepository;
@@ -25,9 +26,19 @@ public class ServiceOfferingService {
         .collect(Collectors.toList());
   }
 
-  public ServiceOfferingResponse createServiceOffering(ServiceOffering serviceOffering, Long enterpriseId) {
-    com.saloria.model.Enterprise enterprise = enterpriseRepository.findById(enterpriseId)
+  public ServiceOfferingResponse createServiceOffering(ServiceOfferingRequest request, String imageUrl) {
+    com.saloria.model.Enterprise enterprise = enterpriseRepository.findById(request.getEnterpriseId())
         .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada"));
+    ServiceOffering serviceOffering = ServiceOffering.builder()
+        .name(request.getName())
+        .description(request.getDescription())
+        .price(request.getPrice())
+        .duration(request.getDuration())
+        .category(request.getCategory())
+        .image(imageUrl)
+        .enterprise(enterprise)
+        .deleted(false)
+        .build();
     serviceOffering.setEnterprise(enterprise);
     return mapToResponse(serviceOfferingRepository.save(serviceOffering));
   }

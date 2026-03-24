@@ -2,19 +2,17 @@ package com.saloria.controller;
 
 import java.util.List;
 
+import com.saloria.dto.ServiceOfferingRequest;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 
-import com.saloria.model.ServiceOffering;
 import com.saloria.dto.ServiceOfferingResponse;
 import com.saloria.service.ServiceOfferingService;
 import com.saloria.service.StorageService;
-import com.saloria.security.SecurityService;
-import org.springframework.security.core.Authentication;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,8 +26,6 @@ public class ServiceOfferingController {
 
   private final ServiceOfferingService serviceOfferingService;
   private final StorageService storageService;
-  private final ObjectMapper objectMapper;
-  private final SecurityService securityService;
 
   @Operation(summary = "Listar servicios por empresa", description = "Devuelve el catálogo de servicios ofrecidos por una empresa concreta.")
   @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN') and @securityService.hasEnterpriseAccess(authentication, #enterpriseId)")
@@ -40,27 +36,18 @@ public class ServiceOfferingController {
 
   @Operation(summary = "Crear nuevo servicio", description = "Crea un nuevo servicio en la base de datos subiendo además su imagen ilustrativa.")
   @PostMapping
-  @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN') and @securityService.hasEnterpriseAccess(authentication, #request.enterpriseId)")
   public ResponseEntity<ServiceOfferingResponse> createServiceOffering(
-      @RequestPart("service") String serviceJson,
-      @RequestPart(value = "image", required = false) MultipartFile image,
-      Authentication authentication) throws Exception {
+      @Valid @RequestPart("service") ServiceOfferingRequest request,
+      @RequestPart(value = "image", required = false) MultipartFile image) {
 
-    ServiceOffering serviceOffering = objectMapper.readValue(serviceJson, ServiceOffering.class);
-
+    String imageUrl = null;
     if (image != null && !image.isEmpty()) {
       String filename = storageService.store(image);
-      serviceOffering.setImage(storageService.getPublicUrl(filename));
+      imageUrl = storageService.getPublicUrl(filename);
     }
 
-    // Extract enterpriseId from DTO or use a separate header/path param
-    Long enterpriseId = serviceOffering.getEnterprise() != null ? serviceOffering.getEnterprise().getId() : null;
-
-    if (!securityService.hasEnterpriseAccess(authentication, enterpriseId)) {
-      throw new org.springframework.security.access.AccessDeniedException("Access Denied");
-    }
-
-    return ResponseEntity.ok(serviceOfferingService.createServiceOffering(serviceOffering, enterpriseId));
+    return ResponseEntity.ok(serviceOfferingService.createServiceOffering(request, imageUrl));
   }
 
   @Operation(summary = "Obtener servicio por ID", description = "Recupera la información completa de un servicio activo.")

@@ -3,6 +3,7 @@ package com.saloria.controller;
 import com.saloria.dto.AppointmentResponse;
 import com.saloria.dto.CreateAppointmentRequest;
 import com.saloria.service.AppointmentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,7 +28,7 @@ public class AppointmentController {
   @Operation(summary = "Crear reserva internamente", description = "Crea una reserva de forma administrativa sin que un cliente acceda desde la interfaz pública.")
   @PostMapping
   @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN') and @securityService.hasEnterpriseAccess(authentication, #request.enterpriseId)")
-  public ResponseEntity<AppointmentResponse> create(@RequestBody CreateAppointmentRequest request) {
+  public ResponseEntity<AppointmentResponse> create(@Valid @RequestBody CreateAppointmentRequest request) {
     return ResponseEntity.ok(appointmentService.create(request));
   }
 

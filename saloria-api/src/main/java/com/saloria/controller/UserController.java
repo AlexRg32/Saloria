@@ -2,13 +2,16 @@ package com.saloria.controller;
 
 import java.util.List;
 
+import com.saloria.dto.CreateUserRequest;
+import com.saloria.dto.UpdateUserRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import com.saloria.dto.UserResponse;
-import com.saloria.model.User;
 import com.saloria.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -31,17 +34,20 @@ public class UserController {
   }
 
   @Operation(summary = "Crear nuevo usuario", description = "Permite a un administrador registrar a un nuevo empleado dentro de su empresa.")
-  @PreAuthorize("(hasRole('ADMIN') or hasRole('SUPER_ADMIN')) and @securityService.hasEnterpriseAccess(authentication, #user.enterprise?.id)")
+  @PreAuthorize("(hasRole('ADMIN') or hasRole('SUPER_ADMIN')) and @securityService.hasEnterpriseAccess(authentication, #request.enterpriseId)")
   @PostMapping
-  public ResponseEntity<UserResponse> createUser(@RequestBody User user) {
-    return ResponseEntity.ok(userService.createUser(user));
+  public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request,
+      Authentication authentication) {
+    return ResponseEntity.ok(userService.createUser(request, authentication));
   }
 
   @Operation(summary = "Actualizar usuario", description = "Actualiza los datos personales, rol o información profesional de un usuario existente.")
   @PreAuthorize("(hasRole('ADMIN') or hasRole('SUPER_ADMIN')) and @securityService.canManageUser(authentication, #id)")
   @PutMapping("/{id}")
-  public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody User user) {
-    return ResponseEntity.ok(userService.updateUser(id, user));
+  public ResponseEntity<UserResponse> updateUser(@PathVariable Long id,
+      @Valid @RequestBody UpdateUserRequest request,
+      Authentication authentication) {
+    return ResponseEntity.ok(userService.updateUser(id, request, authentication));
   }
 
   @Operation(summary = "Eliminar usuario", description = "Realiza un borrado lógico (soft delete) del usuario desvinculándolo del panel activo.")

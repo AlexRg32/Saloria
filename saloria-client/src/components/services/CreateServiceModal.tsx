@@ -57,7 +57,7 @@ export const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, 
         e.preventDefault();
         setLoading(true);
         try {
-            await onSubmit({ ...formData, enterprise: { id: enterpriseId } } as ServiceOffering, selectedFile || undefined);
+            await onSubmit({ ...formData, enterpriseId } as ServiceOffering, selectedFile || undefined);
             setFormData({
                 name: '',
                 description: '',

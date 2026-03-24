@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { userService, User } from '../services/userService';
+import { userService, User, CreateUserPayload, UpdateUserPayload } from '../services/userService';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { EmployeeTable } from '../components/employees/EmployeeTable';
 import { EmployeeModal } from '../components/employees/EmployeeModal';
@@ -46,20 +46,34 @@ const UsersPage = () => {
 
     const handleCreateOrUpdate = async (userData: Partial<User>) => {
         try {
-            // Limpiar datos para el backend
-            const payload = {
-                ...userData,
-                enterprise: enterpriseId ? { id: enterpriseId } : undefined
-            };
-
-            // No enviar contraseña vacía en edición
-            if (selectedEmployee && !payload.password) {
-                delete payload.password;
-            }
-
             if (selectedEmployee) {
+                const payload: UpdateUserPayload = {
+                    name: userData.name || '',
+                    email: userData.email || '',
+                    role: userData.role || 'EMPLEADO',
+                    phone: userData.phone,
+                    active: userData.active
+                };
+
+                if (userData.password?.trim()) {
+                    payload.password = userData.password;
+                }
+
                 await userService.updateUser(selectedEmployee.id, payload);
             } else {
+                if (!enterpriseId) {
+                    throw new Error('No se ha detectado una empresa válida para este usuario.');
+                }
+
+                const payload: CreateUserPayload = {
+                    name: userData.name || '',
+                    email: userData.email || '',
+                    password: userData.password || '',
+                    role: userData.role || 'EMPLEADO',
+                    phone: userData.phone,
+                    enterpriseId
+                };
+
                 await userService.createUser(payload);
             }
             await fetchEmployees();

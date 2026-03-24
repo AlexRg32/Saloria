@@ -32,7 +32,10 @@ Recomendacion:
    - `SPRING_DATASOURCE_URL`: La URI que copiaste de Supabase.
    - `SPRING_DATASOURCE_USERNAME`: `postgres` (o el que definieras).
    - `SPRING_DATASOURCE_PASSWORD`: Tu contraseña de Supabase.
+   - `JWT_SECRET`: Un secreto largo y aleatorio para firmar los tokens JWT.
    - `CORS_ALLOWED_ORIGINS`: La URL que te dé Vercel (ej: `https://tu-app.vercel.app`).
+   - `APP_BOOTSTRAP_SUPERADMIN_ENABLED`: Déjalo en `false` salvo una inicialización de emergencia controlada.
+   - `APP_BOOTSTRAP_SUPERADMIN_EMAIL` y `APP_BOOTSTRAP_SUPERADMIN_PASSWORD`: Solo si activas el bootstrap anterior.
 
 ## 3. Frontend (React en Vercel)
 

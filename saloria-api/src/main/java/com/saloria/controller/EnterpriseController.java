@@ -3,12 +3,13 @@ package com.saloria.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import com.saloria.dto.EnterpriseRequest;
 import com.saloria.service.EnterpriseService;
 import com.saloria.dto.EnterpriseResponse;
 import com.saloria.dto.UserResponse;
-import com.saloria.model.Enterprise;
 
 import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,8 +35,8 @@ public class EnterpriseController {
   @Operation(summary = "Crear nueva empresa internamente")
   @PostMapping
   @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-  public ResponseEntity<EnterpriseResponse> create(@RequestBody Enterprise enterprise) {
-    return ResponseEntity.ok(enterpriseService.save(enterprise));
+  public ResponseEntity<EnterpriseResponse> create(@Valid @RequestBody EnterpriseRequest request) {
+    return ResponseEntity.ok(enterpriseService.save(request));
   }
 
   @Operation(summary = "Obtener detalles de empresa por ID")
@@ -48,8 +49,8 @@ public class EnterpriseController {
   @Operation(summary = "Actualizar información de la empresa")
   @PutMapping("/{id}")
   @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN') and @securityService.hasEnterpriseAccess(authentication, #id)")
-  public ResponseEntity<EnterpriseResponse> update(@PathVariable Long id, @RequestBody Enterprise enterprise) {
-    return ResponseEntity.ok(enterpriseService.update(id, enterprise));
+  public ResponseEntity<EnterpriseResponse> update(@PathVariable Long id, @Valid @RequestBody EnterpriseRequest request) {
+    return ResponseEntity.ok(enterpriseService.update(id, request));
   }
 
   @Operation(summary = "Obtener empleados internos de la empresa")

@@ -5,12 +5,10 @@ export interface ServiceOffering {
     name: string;
     description: string;
     price: number;
-    image: string;
+    image?: string | null;
     duration: number; // in minutes
     category: string;
-    enterprise: {
-        id: number;
-    };
+    enterpriseId: number;
 }
 
 export const serviceOfferingService = {
@@ -21,20 +19,17 @@ export const serviceOfferingService = {
 
     create: async (service: ServiceOffering, imageFile?: File) => {
         const formData = new FormData();
-        
-        // Append service JSON
-        formData.append('service', JSON.stringify(service));
-        
-        // Append image if exists
+
+        formData.append(
+            'service',
+            new Blob([JSON.stringify(service)], { type: 'application/json' })
+        );
+
         if (imageFile) {
             formData.append('image', imageFile);
         }
 
-        const response = await apiClient.post<ServiceOffering>('/api/services', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        const response = await apiClient.post<ServiceOffering>('/api/services', formData);
         return response.data;
     },
 

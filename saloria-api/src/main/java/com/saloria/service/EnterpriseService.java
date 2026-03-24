@@ -3,11 +3,13 @@ package com.saloria.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.util.StringUtils;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
 import com.saloria.model.Enterprise;
 import com.saloria.model.Role;
+import com.saloria.dto.EnterpriseRequest;
 import com.saloria.dto.EnterpriseResponse;
 import com.saloria.dto.UserResponse;
 import com.saloria.repository.EnterpriseRepository;
@@ -27,10 +29,12 @@ public class EnterpriseService {
         .collect(Collectors.toList());
   }
 
-  public EnterpriseResponse save(Enterprise enterprise) {
-    if (enterpriseRepository.findByCif(enterprise.getCif()).isPresent()) {
-      throw new RuntimeException("La empresa ya existe");
+  public EnterpriseResponse save(EnterpriseRequest request) {
+    if (StringUtils.hasText(request.getCif()) && enterpriseRepository.findByCif(request.getCif()).isPresent()) {
+      throw new IllegalArgumentException("Ya existe una empresa con ese CIF");
     }
+    Enterprise enterprise = new Enterprise();
+    applyRequest(enterprise, request);
     return mapToResponse(enterpriseRepository.save(enterprise));
   }
 
@@ -49,24 +53,16 @@ public class EnterpriseService {
     return mapToResponse(enterprise);
   }
 
-  public EnterpriseResponse update(Long id, Enterprise enterpriseDetails) {
+  public EnterpriseResponse update(Long id, EnterpriseRequest request) {
     Enterprise enterprise = findById(id);
-
-    enterprise.setName(enterpriseDetails.getName());
-    enterprise.setCif(enterpriseDetails.getCif());
-    enterprise.setAddress(enterpriseDetails.getAddress());
-    enterprise.setPhone(enterpriseDetails.getPhone());
-    enterprise.setEmail(enterpriseDetails.getEmail());
-    enterprise.setWebsite(enterpriseDetails.getWebsite());
-    enterprise.setLogo(enterpriseDetails.getLogo());
-    enterprise.setBanner(enterpriseDetails.getBanner());
-    enterprise.setInstagram(enterpriseDetails.getInstagram());
-    enterprise.setFacebook(enterpriseDetails.getFacebook());
-    enterprise.setTiktok(enterpriseDetails.getTiktok());
-    enterprise.setWhatsapp(enterpriseDetails.getWhatsapp());
-    enterprise.setPrimaryColor(enterpriseDetails.getPrimaryColor());
-    enterprise.setSecondaryColor(enterpriseDetails.getSecondaryColor());
-    enterprise.setDescription(enterpriseDetails.getDescription());
+    if (StringUtils.hasText(request.getCif())) {
+      enterpriseRepository.findByCif(request.getCif())
+          .filter(existing -> !existing.getId().equals(id))
+          .ifPresent(existing -> {
+            throw new IllegalArgumentException("Ya existe una empresa con ese CIF");
+          });
+    }
+    applyRequest(enterprise, request);
 
     return mapToResponse(enterpriseRepository.save(enterprise));
   }
@@ -86,6 +82,27 @@ public class EnterpriseService {
 
   public void delete(Long id) {
     enterpriseRepository.deleteById(id);
+  }
+
+  private void applyRequest(Enterprise enterprise, EnterpriseRequest request) {
+    enterprise.setName(request.getName());
+    enterprise.setCif(request.getCif());
+    enterprise.setAddress(request.getAddress());
+    enterprise.setPhone(request.getPhone());
+    enterprise.setEmail(request.getEmail());
+    enterprise.setWebsite(request.getWebsite());
+    enterprise.setLogo(request.getLogo());
+    enterprise.setBanner(request.getBanner());
+    enterprise.setInstagram(request.getInstagram());
+    enterprise.setFacebook(request.getFacebook());
+    enterprise.setTiktok(request.getTiktok());
+    enterprise.setWhatsapp(request.getWhatsapp());
+    enterprise.setPrimaryColor(request.getPrimaryColor());
+    enterprise.setSecondaryColor(request.getSecondaryColor());
+    enterprise.setDescription(request.getDescription());
+    if (request.getSlug() != null) {
+      enterprise.setSlug(request.getSlug());
+    }
   }
 
   private EnterpriseResponse mapToResponse(Enterprise enterprise) {

@@ -2,10 +2,12 @@ package com.saloria.service;
 
 import com.saloria.dto.CreateAppointmentRequest;
 import com.saloria.dto.AppointmentResponse;
+import com.saloria.exception.ResourceNotFoundException;
 import com.saloria.model.*;
 import com.saloria.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.time.LocalDateTime;
@@ -22,11 +24,14 @@ public class AppointmentService {
 
   public AppointmentResponse create(CreateAppointmentRequest request) {
     User employee = userRepository.findById(request.getEmployeeId())
-        .orElseThrow(() -> new RuntimeException("Employee not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("Empleado no encontrado"));
     ServiceOffering service = serviceOfferingRepository.findById(request.getServiceId())
-        .orElseThrow(() -> new RuntimeException("Service not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado"));
     Enterprise enterprise = enterpriseRepository.findById(request.getEnterpriseId())
-        .orElseThrow(() -> new RuntimeException("Enterprise not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada"));
+
+    validateEmployee(employee, enterprise);
+    validateService(service, enterprise);
 
     // Check for conflicts
     LocalDateTime requestStart = request.getDate();
@@ -47,7 +52,7 @@ public class AppointmentService {
         });
 
     if (hasConflict) {
-      throw new RuntimeException("El empleado ya tiene una cita en ese horario.");
+      throw new IllegalStateException("El empleado ya tiene una cita en ese horario.");
     }
 
     Customer customer = getOrCreateCustomer(request, enterprise);
@@ -72,14 +77,17 @@ public class AppointmentService {
 
   private Customer getOrCreateCustomer(CreateAppointmentRequest request, Enterprise enterprise) {
     if (request.getCustomerId() != null) {
-      return customerRepository.findById(request.getCustomerId())
-          .orElseThrow(() -> new RuntimeException("Customer not found"));
+      Customer customer = customerRepository.findById(request.getCustomerId())
+          .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado"));
+      validateCustomer(customer, enterprise);
+      return customer;
     } else if (request.getUserId() != null) {
       // Registered User
       return customerRepository.findByEnterpriseIdAndUserId(enterprise.getId(), request.getUserId())
           .orElseGet(() -> {
             User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+            validatePortalUser(user, enterprise);
             return customerRepository.save(Customer.builder()
                 .name(user.getName())
                 .phone(user.getPhone())
@@ -121,7 +129,7 @@ public class AppointmentService {
 
   public List<AppointmentResponse> findByUserEmail(String email) {
     User user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new RuntimeException("User not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
     return appointmentRepository.findByCustomerUserIdOrderByDateDesc(user.getId()).stream()
         .map(this::mapToResponse)
         .collect(Collectors.toList());
@@ -129,7 +137,7 @@ public class AppointmentService {
 
   public AppointmentResponse checkout(Long id, PaymentMethod method) {
     Appointment appointment = appointmentRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
 
     appointment.setPaid(true);
     appointment.setPaymentMethod(method);
@@ -182,5 +190,44 @@ public class AppointmentService {
         .enterpriseName(a.getEnterprise().getName())
         .enterpriseSlug(a.getEnterprise().getSlug())
         .build();
+  }
+
+  private void validateEmployee(User employee, Enterprise enterprise) {
+    if (employee.getEnterprise() == null || !enterprise.getId().equals(employee.getEnterprise().getId())) {
+      throw new AccessDeniedException("El empleado no pertenece a la empresa indicada");
+    }
+    if (employee.getRole() == Role.CLIENTE) {
+      throw new IllegalArgumentException("El profesional seleccionado no es válido");
+    }
+    if (!employee.isEnabled()) {
+      throw new IllegalArgumentException("El profesional seleccionado está inactivo");
+    }
+  }
+
+  private void validateService(ServiceOffering service, Enterprise enterprise) {
+    if (service.getEnterprise() == null || !enterprise.getId().equals(service.getEnterprise().getId())) {
+      throw new AccessDeniedException("El servicio no pertenece a la empresa indicada");
+    }
+    if (service.isDeleted()) {
+      throw new IllegalArgumentException("El servicio seleccionado ya no está disponible");
+    }
+  }
+
+  private void validateCustomer(Customer customer, Enterprise enterprise) {
+    if (customer.getEnterprise() == null || !enterprise.getId().equals(customer.getEnterprise().getId())) {
+      throw new AccessDeniedException("El cliente no pertenece a la empresa indicada");
+    }
+  }
+
+  private void validatePortalUser(User user, Enterprise enterprise) {
+    if (user.getRole() != Role.CLIENTE) {
+      throw new IllegalArgumentException("Solo se pueden vincular usuarios cliente a una reserva");
+    }
+    if (!user.isEnabled()) {
+      throw new IllegalArgumentException("El usuario cliente está inactivo");
+    }
+    if (user.getEnterprise() != null && !enterprise.getId().equals(user.getEnterprise().getId())) {
+      throw new AccessDeniedException("El usuario no puede reservar en una empresa distinta");
+    }
   }
 }
