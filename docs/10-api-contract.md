@@ -17,6 +17,7 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 - **Autorización:** *Público*
 - **Descripción:** Crea una nueva empresa junto con su cuenta de administrador inicial en un solo paso.
 - **Restricción:** Si `enterpriseName` ya existe, el endpoint debe rechazar la petición con conflicto; el alta pública no puede reutilizar una empresa existente.
+- **Comportamiento adicional:** En altas profesionales, el backend genera automáticamente un `slug` único a partir del nombre del negocio y reutiliza el email del registro como contacto inicial de la empresa.
 - **Body Esperado:** `RegisterRequest`
 - **Respuesta:** `AuthResponse` (contiene `token`) o `409 Conflict`
 
@@ -39,13 +40,14 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 
 - **Método:** `GET /api/public/enterprises`
 - **Descripción:** Lista negocios visibles en el marketplace y permite filtrar con `?q=` por nombre, dirección o servicios.
+- **Restricción:** Solo aparecen empresas con perfil público listo (`slug`, dirección, descripción y al menos un canal público de contacto).
 - **Respuesta:** Lista de `PublicEnterpriseSummaryResponse`
 
 ### Obtener empresa por slug
 
 - **Método:** `GET /api/public/enterprises/slug/{slug}`
 - **Descripción:** Recupera la información pública de una empresa a partir de su `slug`.
-- **Respuesta:** `EnterpriseResponse`
+- **Respuesta:** `EnterpriseResponse` (incluye `readiness` cuando aplica)
 
 ### Listar servicios de empresa
 
@@ -131,13 +133,19 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 ### Detalles de empresa
 
 - **Método:** `GET /api/enterprises/{id}`
-- **Respuesta:** `EnterpriseResponse`
+- **Respuesta:** `EnterpriseResponse` con `readiness`:
+  - `publicProfileReady`
+  - `bookingReady`
+  - `publicProfilePath`
+  - `missingPublicProfile`
+  - `missingBookingSetup`
 
 ### Actualizar empresa
 
 - **Método:** `PUT /api/enterprises/{id}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
 - **Body Esperado:** `EnterpriseRequest`
+- **Descripción:** Si `slug` llega vacío o ausente, el backend genera o conserva uno automáticamente a partir del nombre. Si llega informado, lo normaliza y asegura unicidad.
 - **Respuesta:** `EnterpriseResponse`
 
 ### Empleados internos

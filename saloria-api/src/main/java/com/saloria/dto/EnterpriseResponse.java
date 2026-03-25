@@ -27,4 +27,5 @@ public class EnterpriseResponse {
   private String primaryColor;
   private String secondaryColor;
   private String description;
+  private EnterpriseReadinessResponse readiness;
 }

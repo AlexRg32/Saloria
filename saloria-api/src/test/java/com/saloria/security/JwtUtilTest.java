@@ -56,4 +56,20 @@ public class JwtUtilTest {
     assertFalse(jwtUtil.isTokenValid(inactiveToken, inactiveUser));
     assertFalse(jwtUtil.isTokenValid(archivedToken, archivedUser));
   }
+
+  @Test
+  void tokenSupportsPlainTextSecretsUsedInLocalDevelopment() {
+    ReflectionTestUtils.setField(jwtUtil, "secretKey", "dev-only-change-this-secret-before-sharing");
+
+    User user = User.builder()
+        .email("plain@example.com")
+        .role(Role.ADMIN)
+        .active(true)
+        .archived(false)
+        .build();
+
+    String token = jwtUtil.generateToken(user);
+
+    assertTrue(jwtUtil.isTokenValid(token, user));
+  }
 }

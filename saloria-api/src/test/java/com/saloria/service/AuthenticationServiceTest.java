@@ -2,12 +2,11 @@ package com.saloria.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,6 @@ import com.saloria.dto.RegisterRequest;
 import com.saloria.model.Enterprise;
 import com.saloria.model.Role;
 import com.saloria.model.User;
-import com.saloria.repository.EnterpriseRepository;
 import com.saloria.repository.UserRepository;
 import com.saloria.security.JwtUtil;
 
@@ -30,7 +28,7 @@ public class AuthenticationServiceTest {
   @Mock
   private UserRepository userRepository;
   @Mock
-  private EnterpriseRepository enterpriseRepository;
+  private EnterpriseService enterpriseService;
   @Mock
   private PasswordEncoder passwordEncoder;
   @Mock
@@ -45,7 +43,7 @@ public class AuthenticationServiceTest {
     MockitoAnnotations.openMocks(this);
     authenticationService = new AuthenticationService(
         userRepository,
-        enterpriseRepository,
+        enterpriseService,
         passwordEncoder,
         jwtUtil,
         authenticationManager);
@@ -60,13 +58,14 @@ public class AuthenticationServiceTest {
         .enterpriseName("Salon Norte")
         .build();
 
-    when(enterpriseRepository.findByName("Salon Norte"))
-        .thenReturn(Optional.of(Enterprise.builder().id(3L).name("Salon Norte").build()));
+    when(enterpriseService.createInitialEnterprise("Salon Norte", "lucia@example.com"))
+        .thenThrow(new IllegalArgumentException(
+            "Ya existe una empresa con ese nombre. Contacta con soporte si necesitas acceso."));
 
-    IllegalStateException error = assertThrows(IllegalStateException.class, () -> authenticationService.register(request));
+    IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> authenticationService.register(request));
 
     assertEquals("Ya existe una empresa con ese nombre. Contacta con soporte si necesitas acceso.", error.getMessage());
-    verify(enterpriseRepository, never()).save(any());
     verify(userRepository, never()).save(any());
   }
 
@@ -79,7 +78,7 @@ public class AuthenticationServiceTest {
         .enterpriseName("Salon Nuevo")
         .build();
 
-    Enterprise enterprise = Enterprise.builder().id(8L).name("Salon Nuevo").build();
+    Enterprise enterprise = Enterprise.builder().id(8L).name("Salon Nuevo").slug("salon-nuevo").build();
     User savedUser = User.builder()
         .id(14L)
         .name("Lucia")
@@ -88,8 +87,7 @@ public class AuthenticationServiceTest {
         .enterprise(enterprise)
         .build();
 
-    when(enterpriseRepository.findByName("Salon Nuevo")).thenReturn(Optional.empty());
-    when(enterpriseRepository.save(any(Enterprise.class))).thenReturn(enterprise);
+    when(enterpriseService.createInitialEnterprise("Salon Nuevo", "lucia@example.com")).thenReturn(enterprise);
     when(passwordEncoder.encode("secret123")).thenReturn("encoded");
     when(userRepository.save(any(User.class))).thenReturn(savedUser);
     when(jwtUtil.generateToken(any(), any(User.class))).thenReturn("token");
@@ -97,7 +95,30 @@ public class AuthenticationServiceTest {
     AuthResponse response = authenticationService.register(request);
 
     assertEquals("token", response.getToken());
-    verify(enterpriseRepository).save(any(Enterprise.class));
+    verify(enterpriseService).createInitialEnterprise("Salon Nuevo", "lucia@example.com");
     verify(userRepository).save(any(User.class));
+  }
+
+  @Test
+  void registerCreatesClientUserWithoutEnterprise() {
+    RegisterRequest request = RegisterRequest.builder()
+        .name("Ana")
+        .email("ana@example.com")
+        .password("secret123")
+        .build();
+
+    when(passwordEncoder.encode("secret123")).thenReturn("encoded");
+    when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+      User user = invocation.getArgument(0);
+      user.setId(21L);
+      return user;
+    });
+    when(jwtUtil.generateToken(any(), any(User.class))).thenReturn("token");
+
+    AuthResponse response = authenticationService.register(request);
+
+    assertEquals("token", response.getToken());
+    verify(enterpriseService, never()).createInitialEnterprise(any(), any());
+    verify(userRepository).save(argThat(user -> user.getEnterprise() == null && user.getRole() == Role.CLIENTE));
   }
 }

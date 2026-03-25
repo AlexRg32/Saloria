@@ -1,5 +1,13 @@
 import { apiClient } from '../lib/axios';
 
+export interface EnterpriseReadiness {
+    publicProfileReady: boolean;
+    bookingReady: boolean;
+    publicProfilePath?: string | null;
+    missingPublicProfile: string[];
+    missingBookingSetup: string[];
+}
+
 export interface Enterprise {
     id: number;
     name: string;
@@ -18,6 +26,7 @@ export interface Enterprise {
     primaryColor?: string;
     secondaryColor?: string;
     description?: string;
+    readiness?: EnterpriseReadiness;
 }
 
 export const enterpriseService = {

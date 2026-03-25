@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -26,6 +27,13 @@ public class GlobalExceptionHandler {
     Map<String, String> body = new LinkedHashMap<>();
     body.put("message", "El archivo es demasiado grande. El límite es de 5MB.");
     return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(body);
+  }
+
+  @ExceptionHandler(MultipartException.class)
+  public ResponseEntity<Map<String, String>> handleMultipartException(MultipartException exc) {
+    Map<String, String> body = new LinkedHashMap<>();
+    body.put("message", "No se pudo procesar la subida del servicio. Revisa la imagen e inténtalo de nuevo.");
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

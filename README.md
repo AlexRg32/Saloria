@@ -81,17 +81,27 @@ El proyecto sigue estándares de arquitectura de la industria para asegurar esca
 - Node.js (para desarrollo local del frontend)
 - JDK 21+ (para desarrollo local del backend)
 
-### 🐳 Inicio Rápido (Docker)
+### 🐳 Inicio Rápido (Docker Desktop)
 
-La forma más fácil de ejecutar el proyecto completo es usando Docker Compose:
+La forma más fácil de ejecutar el proyecto completo en Docker Desktop es usando Docker Compose:
 
 ```bash
-docker-compose up --build
+docker compose up --build -d
 ```
+
+Servicios expuestos:
 
 - **Frontend**: [http://localhost:3000](http://localhost:3000)
 - **Backend API**: [http://localhost:8080](http://localhost:8080)
 - **Base de Datos (Postgres)**: `localhost:5433`
+
+Notas útiles:
+
+- El stack incluye `db`, `db_bootstrap`, `app` y `client`.
+- `db_bootstrap` crea `saloria_db` si detecta un volumen antiguo en el que aún no exista esa base.
+- Para ver logs: `docker compose logs -f app client db`
+- Para parar el stack: `docker compose down`
+- Para reiniciar desde cero borrando datos locales: `docker compose down -v`
 
 ### 💻 Configuración de Desarrollo Local
 

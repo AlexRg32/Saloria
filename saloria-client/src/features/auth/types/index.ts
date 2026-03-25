@@ -4,6 +4,7 @@ export interface User {
   userId?: number;
   enterpriseName?: string;
   enterpriseId?: number;
+  enterpriseSlug?: string;
   primaryColor?: string;
   secondaryColor?: string;
   role: string;
@@ -26,5 +27,5 @@ export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
-  enterpriseName: string;
+  enterpriseName?: string;
 }

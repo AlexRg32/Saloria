@@ -17,7 +17,9 @@ import {
     Mail,
     Globe2,
     Info,
-    Clock
+    Clock,
+    ExternalLink,
+    Rocket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WorkingHourSettings } from '@/components/settings/WorkingHourSettings';
@@ -67,7 +69,8 @@ const EnterprisePage = () => {
             setTimeout(() => setMessage(null), 3000);
         } catch (error) {
             console.error('Error saving enterprise:', error);
-            setMessage({ type: 'error', text: 'Error al guardar los cambios' });
+            const backendMessage = (error as any)?.response?.data?.message;
+            setMessage({ type: 'error', text: backendMessage || 'Error al guardar los cambios' });
         } finally {
             setSaving(false);
         }
@@ -101,6 +104,7 @@ const EnterprisePage = () => {
         { id: 'schedule', label: 'Horarios de Apertura', icon: Clock },
         { id: 'social', label: 'Redes Sociales', icon: Share2 },
     ];
+    const readiness = enterprise.readiness;
 
     return (
         <section className="max-w-5xl mx-auto space-y-8 pb-12">
@@ -141,6 +145,94 @@ const EnterprisePage = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {readiness && (
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Perfil Público</p>
+                                <h2 className="mt-2 text-xl font-black text-slate-900">Marketplace y ficha pública</h2>
+                            </div>
+                            <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
+                                readiness.publicProfileReady
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : 'bg-amber-50 text-amber-700'
+                            }`}>
+                                {readiness.publicProfileReady ? 'Listo' : 'Pendiente'}
+                            </span>
+                        </div>
+
+                        <p className="mt-3 text-sm text-slate-500">
+                            {readiness.publicProfileReady
+                                ? 'Tu negocio ya cumple el mínimo para aparecer en el directorio público.'
+                                : 'Completa estos básicos para que tu negocio se publique con una ficha sólida.'}
+                        </p>
+
+                        {readiness.publicProfilePath && (
+                            <a
+                                href={readiness.publicProfilePath}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-800"
+                            >
+                                <ExternalLink size={16} />
+                                Ver perfil público
+                            </a>
+                        )}
+
+                        <div className="mt-5 space-y-2">
+                            {readiness.missingPublicProfile.length > 0 ? readiness.missingPublicProfile.map((item) => (
+                                <div key={item} className="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                    <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-500" />
+                                    <span>{item}</span>
+                                </div>
+                            )) : (
+                                <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                                    <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+                                    <span>Tu ficha pública ya tiene lo necesario para mostrarse en el marketplace.</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Reserva Online</p>
+                                <h2 className="mt-2 text-xl font-black text-slate-900">Preparación para aceptar citas</h2>
+                            </div>
+                            <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
+                                readiness.bookingReady
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : 'bg-sky-50 text-sky-700'
+                            }`}>
+                                {readiness.bookingReady ? 'Activa' : 'En preparación'}
+                            </span>
+                        </div>
+
+                        <p className="mt-3 text-sm text-slate-500">
+                            {readiness.bookingReady
+                                ? 'Tu negocio ya tiene servicios, profesionales y horarios suficientes para aceptar reservas.'
+                                : 'Cuando cierres estos puntos, los clientes podrán reservar sin bloqueos desde tu perfil público.'}
+                        </p>
+
+                        <div className="mt-5 space-y-2">
+                            {readiness.missingBookingSetup.length > 0 ? readiness.missingBookingSetup.map((item) => (
+                                <div key={item} className="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                    <Rocket size={16} className="mt-0.5 shrink-0 text-sky-500" />
+                                    <span>{item}</span>
+                                </div>
+                            )) : (
+                                <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                                    <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+                                    <span>La reserva online está lista para funcionar en tu perfil.</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Sidebar Navigation */}
@@ -186,6 +278,23 @@ const EnterprisePage = () => {
                                                 placeholder="Ej. Barbería El Elegante"
                                             />
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-2 col-span-2">
+                                        <label className="text-sm font-semibold text-slate-700 ml-1">URL Pública</label>
+                                        <div className="relative">
+                                            <Globe2 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <input
+                                                type="text"
+                                                value={enterprise.slug || ''}
+                                                onChange={(e) => handleChange('slug', e.target.value)}
+                                                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all"
+                                                placeholder="Se genera automáticamente desde el nombre"
+                                            />
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 font-semibold">
+                                            Se normaliza al guardar. Tu perfil público quedará en {enterprise.slug ? `/b/${enterprise.slug}` : '/b/tu-negocio'}.
+                                        </p>
                                     </div>
 
                                     <div className="space-y-2">

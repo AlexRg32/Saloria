@@ -6,7 +6,6 @@ import com.saloria.dto.RegisterRequest;
 import com.saloria.model.Enterprise;
 import com.saloria.model.Role;
 import com.saloria.model.User;
-import com.saloria.repository.EnterpriseRepository;
 import com.saloria.repository.UserRepository;
 import com.saloria.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +14,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,25 +23,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthenticationService {
   private final UserRepository repository;
-  private final EnterpriseRepository enterpriseRepository;
+  private final EnterpriseService enterpriseService;
   private final PasswordEncoder passwordEncoder;
   private final JwtUtil jwtService;
   private final AuthenticationManager authenticationManager;
 
+  @Transactional
   public AuthResponse register(RegisterRequest request) {
     Enterprise enterprise = null;
     Role role = Role.CLIENTE;
 
     // Si hay nombre de empresa, es un registro Profesional (ADMIN)
     if (request.getEnterpriseName() != null && !request.getEnterpriseName().trim().isEmpty()) {
-      String enterpriseName = request.getEnterpriseName().trim();
-      if (enterpriseRepository.findByName(enterpriseName).isPresent()) {
-        throw new IllegalStateException("Ya existe una empresa con ese nombre. Contacta con soporte si necesitas acceso.");
-      }
-
-      Enterprise newEnterprise = new Enterprise();
-      newEnterprise.setName(enterpriseName);
-      enterprise = enterpriseRepository.save(newEnterprise);
+      enterprise = enterpriseService.createInitialEnterprise(request.getEnterpriseName(), request.getEmail());
       role = Role.ADMIN;
     }
 
@@ -60,6 +54,7 @@ public class AuthenticationService {
     if (enterprise != null) {
       extraClaims.put("enterpriseName", enterprise.getName());
       extraClaims.put("enterpriseId", enterprise.getId());
+      extraClaims.put("enterpriseSlug", enterprise.getSlug());
       extraClaims.put("primaryColor", enterprise.getPrimaryColor());
       extraClaims.put("secondaryColor", enterprise.getSecondaryColor());
     }
@@ -101,6 +96,7 @@ public class AuthenticationService {
     if (user.getEnterprise() != null) {
       extraClaims.put("enterpriseName", user.getEnterprise().getName());
       extraClaims.put("enterpriseId", user.getEnterprise().getId());
+      extraClaims.put("enterpriseSlug", user.getEnterprise().getSlug());
       extraClaims.put("primaryColor", user.getEnterprise().getPrimaryColor());
       extraClaims.put("secondaryColor", user.getEnterprise().getSecondaryColor());
     }
