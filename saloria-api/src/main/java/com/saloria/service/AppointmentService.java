@@ -11,6 +11,8 @@ import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,16 @@ public class AppointmentService {
   private final CustomerRepository customerRepository;
   private final ServiceOfferingRepository serviceOfferingRepository;
   private final EnterpriseRepository enterpriseRepository;
+  private final WorkingHourRepository workingHourRepository;
+
+  private static final Map<java.time.DayOfWeek, String> DAY_LABELS = Map.of(
+      java.time.DayOfWeek.MONDAY, "LUNES",
+      java.time.DayOfWeek.TUESDAY, "MARTES",
+      java.time.DayOfWeek.WEDNESDAY, "MIERCOLES",
+      java.time.DayOfWeek.THURSDAY, "JUEVES",
+      java.time.DayOfWeek.FRIDAY, "VIERNES",
+      java.time.DayOfWeek.SATURDAY, "SABADO",
+      java.time.DayOfWeek.SUNDAY, "DOMINGO");
 
   public AppointmentResponse create(CreateAppointmentRequest request) {
     User employee = userRepository.findById(request.getEmployeeId())
@@ -33,10 +45,11 @@ public class AppointmentService {
     validateEmployee(employee, enterprise);
     validateService(service, enterprise);
 
-    // Check for conflicts
     LocalDateTime requestStart = request.getDate();
     LocalDateTime requestEnd = requestStart.plusMinutes(service.getDuration());
+    validateWorkingSchedule(employee, enterprise, requestStart, requestEnd);
 
+    // Check for conflicts
     LocalDateTime dayStart = requestStart.toLocalDate().atStartOfDay();
     LocalDateTime dayEnd = requestStart.toLocalDate().atTime(23, 59, 59);
 
@@ -236,5 +249,46 @@ public class AppointmentService {
     if (user.getEnterprise() != null && !enterprise.getId().equals(user.getEnterprise().getId())) {
       throw new AccessDeniedException("El usuario no puede reservar en una empresa distinta");
     }
+  }
+
+  private void validateWorkingSchedule(User employee, Enterprise enterprise, LocalDateTime requestStart,
+      LocalDateTime requestEnd) {
+    WorkingWindow workingWindow = resolveWorkingWindow(employee, enterprise, requestStart.getDayOfWeek());
+
+    if (workingWindow.dayOff()) {
+      throw new IllegalStateException("El profesional no trabaja el día seleccionado.");
+    }
+
+    LocalTime requestedStartTime = requestStart.toLocalTime();
+    LocalTime requestedEndTime = requestEnd.toLocalTime();
+
+    if (requestedStartTime.isBefore(workingWindow.startTime()) || requestedEndTime.isAfter(workingWindow.endTime())) {
+      throw new IllegalStateException("La cita debe estar dentro del horario laboral del profesional.");
+    }
+  }
+
+  private WorkingWindow resolveWorkingWindow(User employee, Enterprise enterprise, java.time.DayOfWeek dayOfWeek) {
+    String requestedDay = DAY_LABELS.get(dayOfWeek);
+
+    return workingHourRepository.findFirstByUser_IdAndDay(employee.getId(), requestedDay)
+        .map(this::toWorkingWindow)
+        .or(() -> workingHourRepository.findFirstByEnterpriseIdAndUserIdIsNullAndDay(enterprise.getId(), requestedDay)
+            .map(this::toWorkingWindow))
+        .orElseGet(() -> defaultWorkingWindow(dayOfWeek));
+  }
+
+  private WorkingWindow toWorkingWindow(WorkingHour workingHour) {
+    return new WorkingWindow(
+        LocalTime.parse(workingHour.getStartTime()),
+        LocalTime.parse(workingHour.getEndTime()),
+        workingHour.isDayOff());
+  }
+
+  private WorkingWindow defaultWorkingWindow(java.time.DayOfWeek dayOfWeek) {
+    boolean isSunday = dayOfWeek == java.time.DayOfWeek.SUNDAY;
+    return new WorkingWindow(LocalTime.of(9, 0), LocalTime.of(20, 0), isSunday);
+  }
+
+  private record WorkingWindow(LocalTime startTime, LocalTime endTime, boolean dayOff) {
   }
 }

@@ -27,13 +27,14 @@ public class EnterpriseController {
 
   @Operation(summary = "Listar todas las empresas", description = "Obtiene un directorio de todas las empresas afiliadas a la plataforma.")
   @GetMapping
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
   public List<EnterpriseResponse> findAll() {
     return enterpriseService.findAll();
   }
 
   @Operation(summary = "Crear nueva empresa internamente")
   @PostMapping
-  @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
   public ResponseEntity<EnterpriseResponse> create(@Valid @RequestBody EnterpriseRequest request) {
     return ResponseEntity.ok(enterpriseService.save(request));
   }

@@ -111,13 +111,14 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 ### Listar todas las empresas
 
 - **Método:** `GET /api/enterprises`
+- **Autorización:** `ROLE_SUPER_ADMIN`
 - **Descripción:** Obtiene un directorio de empresas registradas.
 - **Respuesta:** Lista de `EnterpriseResponse`
 
 ### Crear nueva empresa internamente
 
 - **Método:** `POST /api/enterprises`
-- **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
+- **Autorización:** `ROLE_SUPER_ADMIN`
 - **Body Esperado:** `EnterpriseRequest`
 - **Respuesta:** `EnterpriseResponse`
 
