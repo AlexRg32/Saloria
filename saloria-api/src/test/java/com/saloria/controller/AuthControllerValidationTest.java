@@ -1,6 +1,7 @@
 package com.saloria.controller;
 
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -56,5 +57,27 @@ public class AuthControllerValidationTest {
         .andExpect(jsonPath("$.fieldErrors.requiredRole").value("El portal solicitado no es válido"));
 
     verifyNoInteractions(authenticationService);
+  }
+
+  @Test
+  void registerReturnsConflictWhenEnterpriseAlreadyExists() throws Exception {
+    String payload = """
+        {
+          "name": "Lucia",
+          "email": "lucia@example.com",
+          "password": "secret123",
+          "enterpriseName": "Salon Norte"
+        }
+        """;
+
+    when(authenticationService.register(Mockito.any()))
+        .thenThrow(new IllegalStateException("Ya existe una empresa con ese nombre. Contacta con soporte si necesitas acceso."));
+
+    mockMvc.perform(post("/auth/register")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(payload))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.message")
+            .value("Ya existe una empresa con ese nombre. Contacta con soporte si necesitas acceso."));
   }
 }

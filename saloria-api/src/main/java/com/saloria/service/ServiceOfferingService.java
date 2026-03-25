@@ -43,19 +43,19 @@ public class ServiceOfferingService {
     return mapToResponse(serviceOfferingRepository.save(serviceOffering));
   }
 
-  public ServiceOfferingResponse getServiceByIdResponse(Long id) {
-    return serviceOfferingRepository.findById(id)
+  public ServiceOfferingResponse getServiceByIdResponse(Long enterpriseId, Long id) {
+    return serviceOfferingRepository.findByIdAndEnterpriseIdAndDeletedFalse(id, enterpriseId)
         .map(this::mapToResponse)
         .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado"));
   }
 
-  public ServiceOffering getServiceById(Long id) {
-    return serviceOfferingRepository.findById(id)
+  public ServiceOffering getServiceById(Long enterpriseId, Long id) {
+    return serviceOfferingRepository.findByIdAndEnterpriseIdAndDeletedFalse(id, enterpriseId)
         .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado"));
   }
 
-  public void deleteService(Long id) {
-    ServiceOffering service = serviceOfferingRepository.findById(id)
+  public void deleteService(Long enterpriseId, Long id) {
+    ServiceOffering service = serviceOfferingRepository.findByIdAndEnterpriseIdAndDeletedFalse(id, enterpriseId)
         .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado"));
     service.setDeleted(true);
     serviceOfferingRepository.save(service);

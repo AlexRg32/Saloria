@@ -34,12 +34,14 @@ public class AuthenticationService {
 
     // Si hay nombre de empresa, es un registro Profesional (ADMIN)
     if (request.getEnterpriseName() != null && !request.getEnterpriseName().trim().isEmpty()) {
-      enterprise = enterpriseRepository.findByName(request.getEnterpriseName())
-          .orElseGet(() -> {
-            Enterprise newEnterprise = new Enterprise();
-            newEnterprise.setName(request.getEnterpriseName());
-            return enterpriseRepository.save(newEnterprise);
-          });
+      String enterpriseName = request.getEnterpriseName().trim();
+      if (enterpriseRepository.findByName(enterpriseName).isPresent()) {
+        throw new IllegalStateException("Ya existe una empresa con ese nombre. Contacta con soporte si necesitas acceso.");
+      }
+
+      Enterprise newEnterprise = new Enterprise();
+      newEnterprise.setName(enterpriseName);
+      enterprise = enterpriseRepository.save(newEnterprise);
       role = Role.ADMIN;
     }
 

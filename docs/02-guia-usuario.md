@@ -8,7 +8,7 @@ Esta guía describe cómo utilizar las funcionalidades principales de la platafo
 
 ### 1. Inicio de Sesión y Registro del Negocio
 
-- **Registro**: Al crear una cuenta profesional, el sistema permite configurar el nombre del negocio (Salón/Barbería), ubicación y datos fiscales.
+- **Registro**: Al crear una cuenta profesional, el sistema crea un negocio nuevo y su cuenta administradora inicial. El alta pública no sirve para unirse a una empresa ya existente; ese acceso debe gestionarse por una vía interna o controlada.
 - **Login**: Accede al panel de control con tu correo electrónico y contraseña seguros.
 
 ### 2. Gestión de Servicios

@@ -10,6 +10,7 @@ import com.saloria.repository.WorkingHourRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -71,11 +72,16 @@ public class WorkingHourService {
 
   @Transactional
   public List<WorkingHourDTO> saveBatch(List<WorkingHourDTO> dtos) {
+    if (dtos == null || dtos.isEmpty()) {
+      return List.of();
+    }
+
     return dtos.stream().map(dto -> {
       WorkingHour entity;
       if (dto.getId() != null) {
         entity = workingHourRepository.findById(dto.getId())
-            .orElse(new WorkingHour());
+            .orElseThrow(() -> new RuntimeException("Working hour not found"));
+        validateWorkingHourOwnership(entity, dto.getEnterpriseId());
       } else {
         entity = new WorkingHour();
       }
@@ -92,9 +98,13 @@ public class WorkingHourService {
       }
 
       if (dto.getUserId() != null && entity.getUser() == null) {
-        User user = userRepository.findById(dto.getUserId())
+        User user = userRepository.findByIdAndEnterpriseIdAndArchivedFalse(dto.getUserId(), dto.getEnterpriseId())
             .orElseThrow(() -> new RuntimeException("User not found"));
         entity.setUser(user);
+      } else if (dto.getUserId() != null) {
+        validateUserOwnership(entity.getUser(), dto.getEnterpriseId());
+      } else {
+        entity.setUser(null);
       }
 
       return mapToDTO(workingHourRepository.save(entity));
@@ -141,5 +151,17 @@ public class WorkingHourService {
         .enterpriseId(wh.getEnterprise().getId())
         .userId(wh.getUser() != null ? wh.getUser().getId() : null)
         .build();
+  }
+
+  private void validateWorkingHourOwnership(WorkingHour workingHour, Long enterpriseId) {
+    if (workingHour.getEnterprise() == null || !workingHour.getEnterprise().getId().equals(enterpriseId)) {
+      throw new AccessDeniedException("El horario no pertenece a la empresa indicada");
+    }
+  }
+
+  private void validateUserOwnership(User user, Long enterpriseId) {
+    if (user == null || user.getEnterprise() == null || !user.getEnterprise().getId().equals(enterpriseId)) {
+      throw new AccessDeniedException("El empleado no pertenece a la empresa indicada");
+    }
   }
 }

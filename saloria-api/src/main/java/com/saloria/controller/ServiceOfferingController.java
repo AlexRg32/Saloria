@@ -55,14 +55,14 @@ public class ServiceOfferingController {
   @GetMapping("/{enterpriseId}/{id}")
   public ResponseEntity<ServiceOfferingResponse> getServiceById(@PathVariable Long enterpriseId,
       @PathVariable Long id) {
-    return ResponseEntity.ok(serviceOfferingService.getServiceByIdResponse(id));
+    return ResponseEntity.ok(serviceOfferingService.getServiceByIdResponse(enterpriseId, id));
   }
 
   @Operation(summary = "Eliminar servicio", description = "Borra un servicio existente indicando su ID y la empresa asociada.")
   @DeleteMapping("/{enterpriseId}/{id}")
   @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN') and @securityService.hasEnterpriseAccess(authentication, #enterpriseId)")
   public ResponseEntity<Void> deleteService(@PathVariable Long enterpriseId, @PathVariable Long id) {
-    serviceOfferingService.deleteService(id);
+    serviceOfferingService.deleteService(enterpriseId, id);
     return ResponseEntity.ok().build();
   }
 }

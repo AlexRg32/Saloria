@@ -44,9 +44,10 @@ public class WorkingHourController {
   public ResponseEntity<List<WorkingHourDTO>> saveBatch(@RequestBody List<WorkingHourDTO> dtos,
       Authentication authentication) {
     if (dtos != null && !dtos.isEmpty()) {
-      Long enterpriseId = dtos.get(0).getEnterpriseId();
-      if (!securityService.hasEnterpriseAccess(authentication, enterpriseId)) {
-        throw new org.springframework.security.access.AccessDeniedException("Access Denied");
+      for (WorkingHourDTO dto : dtos) {
+        if (!securityService.hasEnterpriseAccess(authentication, dto.getEnterpriseId())) {
+          throw new org.springframework.security.access.AccessDeniedException("Access Denied");
+        }
       }
     }
     return ResponseEntity.ok(workingHourService.saveBatch(dtos));

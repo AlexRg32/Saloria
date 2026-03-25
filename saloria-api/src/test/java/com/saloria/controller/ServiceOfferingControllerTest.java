@@ -4,6 +4,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -121,5 +123,31 @@ public class ServiceOfferingControllerTest {
     verify(storageService).store(Mockito.any());
     verify(storageService).getPublicUrl("barba.png");
     verify(serviceOfferingService).createServiceOffering(eq(request), eq("https://cdn.example/barba.png"));
+  }
+
+  @Test
+  void getServiceByIdPassesEnterpriseScopeToService() throws Exception {
+    ServiceOfferingResponse response = ServiceOfferingResponse.builder()
+        .id(22L)
+        .name("Color")
+        .enterpriseId(7L)
+        .build();
+
+    when(serviceOfferingService.getServiceByIdResponse(7L, 22L)).thenReturn(response);
+
+    mockMvc.perform(get("/api/services/7/22"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(22))
+        .andExpect(jsonPath("$.enterpriseId").value(7));
+
+    verify(serviceOfferingService).getServiceByIdResponse(7L, 22L);
+  }
+
+  @Test
+  void deleteServicePassesEnterpriseScopeToService() throws Exception {
+    mockMvc.perform(delete("/api/services/7/22"))
+        .andExpect(status().isOk());
+
+    verify(serviceOfferingService).deleteService(7L, 22L);
   }
 }

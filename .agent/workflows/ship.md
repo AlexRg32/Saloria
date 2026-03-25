@@ -1,10 +1,10 @@
 ---
-description: ship — commits and pushes with pre-flight checks, interactive commit message, and safety nets.
+description: ship — commits and pushes with pre-flight checks, default commit message generation, and safety nets.
 ---
 
 # Ship Workflow
 
-**Goal**: Ship code from the current feature branch to `main` with **pre-flight validation**, **interactive commit message**, **build verification**, and **safe merge**.
+**Goal**: Ship code from the current feature branch to `main` with **pre-flight validation**, **default commit message generation**, **build verification**, and **safe merge**.
 
 > Uses: `git-commit-formatter` skill (Conventional Commits)
 
@@ -17,19 +17,15 @@ description: ship — commits and pushes with pre-flight checks, interactive com
 
 ---
 
-## Step 0: Collect Commit Message
+## Step 0: Resolve Commit Message
 
 If the user invoked `/ship "some message"`, use that message as-is.
 
 If **no commit message** was provided in the invocation:
 
-1. **Ask the user** for the commit message before proceeding.
-   - Suggest a message based on the staged/unstaged changes using the `git-commit-formatter` skill (Conventional Commits format: `<type>[scope]: <description>`).
-   - Example prompt:
-     > I detected the following changes: `[summary of changes]`.
-     > Suggested commit message: `feat(auth): implement google login`
-     > Would you like to use this message, or provide your own?
-2. **Wait for user confirmation** — do NOT proceed until a commit message is confirmed.
+1. Generate a default Conventional Commit message using the `git-commit-formatter` skill based on the actual diff.
+2. Use that generated message automatically.
+3. Do **not** ask the user for confirmation unless they explicitly asked to choose or review the commit message.
 
 Store the final message as `$COMMIT_MSG`.
 
@@ -171,7 +167,8 @@ Always include rollback guidance after shipping:
 ## Rules
 
 1. **Never invoke this workflow automatically.** It must be triggered by the user.
-2. **Never skip Step 0.** The commit message must be confirmed before any git operations.
-3. **Never force-push.** If `git push` fails, report and let the user decide.
-4. **Cleanup after shipping.** Use `git branch -D` to ensure the feature branch is removed after its contents are committed to `main`.
-5. **Always use Conventional Commits format** for the commit message (see `git-commit-formatter` skill).
+2. **Never skip Step 0.** The commit message must be resolved before any git operations.
+3. If the user did not provide a message, use the assistant-generated default without asking for confirmation.
+4. **Never force-push.** If `git push` fails, report and let the user decide.
+5. **Cleanup after shipping.** Use `git branch -D` to ensure the feature branch is removed after its contents are committed to `main`.
+6. **Always use Conventional Commits format** for the commit message (see `git-commit-formatter` skill).

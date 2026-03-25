@@ -16,8 +16,9 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 - **Método:** `POST /auth/register`
 - **Autorización:** *Público*
 - **Descripción:** Crea una nueva empresa junto con su cuenta de administrador inicial en un solo paso.
+- **Restricción:** Si `enterpriseName` ya existe, el endpoint debe rechazar la petición con conflicto; el alta pública no puede reutilizar una empresa existente.
 - **Body Esperado:** `RegisterRequest`
-- **Respuesta:** `AuthResponse` (contiene `token`)
+- **Respuesta:** `AuthResponse` (contiene `token`) o `409 Conflict`
 
 ### Iniciar sesión
 
@@ -173,13 +174,14 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 ### Detalle de servicio
 
 - **Método:** `GET /api/services/{enterpriseId}/{id}`
+- **Descripción:** Devuelve un servicio solo si pertenece a la empresa indicada en la ruta.
 - **Respuesta:** `ServiceOfferingResponse`
 
 ### Eliminar servicio
 
 - **Método:** `DELETE /api/services/{enterpriseId}/{id}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Descripción:** Retira el servicio del catálogo mediante borrado lógico (`deleted=true`).
+- **Descripción:** Retira el servicio del catálogo mediante borrado lógico (`deleted=true`) solo si pertenece a la empresa indicada en la ruta.
 
 ---
 
@@ -257,6 +259,7 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 
 - **Método:** `PUT /api/working-hours/batch`
 - **Descripción:** Reemplaza o inserta jornada laboral en lote.
+- **Restricción:** Todos los elementos del batch deben pertenecer a una empresa sobre la que el usuario tenga acceso; no basta con que el primer elemento sea válido.
 - **Body:** Lista de `WorkingHourDTO`
 - **Respuesta:** Lista de `WorkingHourDTO`
 
