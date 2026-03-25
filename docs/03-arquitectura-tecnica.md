@@ -18,8 +18,8 @@ graph LR
 
 | Contenedor | Tecnología | Responsabilidad |
 | :--- | :--- | :--- |
-| **Web App** | React 18 + Vite | Interfaz de usuario, gestión de estado y navegación. |
-| **API Server** | Java 17 + Spring Boot 3 | Lógica de negocio, seguridad, validación y orquestación de datos. |
+| **Web App** | React 19 + Vite | Interfaz de usuario, navegación, branding y experiencias B2B/B2C. |
+| **API Server** | Java 21 + Spring Boot 3 | Lógica de negocio, seguridad, validación, tenancy y orquestación de datos. |
 | **Database** | PostgreSQL 15 | Persistencia relacional de datos. |
 
 ---
@@ -45,33 +45,34 @@ El código se organiza en capas horizontales para separar responsabilidades:
     - Interfaces `JpaRepository`.
     - Abstracción del acceso a datos.
 
-### Frontend (Feature-based Architecture)
+### Frontend (Arquitectura Híbrida por Features + Dominios)
 
-En lugar de agrupar por tipo (todos los componentes juntos, todos los hooks juntos), se agrupa por funcionalidad (`features/auth`, `features/citas`), lo que mejora la escalabilidad.
+El frontend mezcla `features/` para flujos transversales (`auth`, `client-portal`) con `components/` y `pages/` por dominio de producto (`appointments`, `customers`, `services`, `dashboard`, `marketplace`). Esto permite reutilizar UI de negocio sin forzar una única taxonomía.
 
 ---
 
 ## 🔐 Seguridad y Autenticación
 
-- **Protocolo**: OAuth2 resource server implementado via JWT customizado.
+- **Modelo**: autenticación stateless con JWT propio firmado por el backend.
 - **Flujo**:
     1. Cliente envía credenciales (`POST /auth/login`).
-    2. Servidor valida y retorna `access_token` (JWT).
-    3. Cliente almacena token (localStorage/HttpOnly Cookie).
+    2. Servidor valida y retorna `token` (JWT).
+    3. Cliente almacena el token en `localStorage` y reconstruye sesión en el arranque.
     4. Cliente envía header `Authorization: Bearer <token>` en cada petición.
 - **Roles**:
   - `ROLE_ADMIN`: Acceso total a la configuración de su `Enterprise`.
-  - `ROLE_EMPLOYEE`: Acceso a agenda y citas.
-  - `ROLE_CLIENT`: Acceso solo a su propio perfil y reservas.
+  - `ROLE_EMPLEADO`: Acceso operativo a agenda y citas.
+  - `ROLE_CLIENTE`: Acceso a su propio perfil y reservas.
+  - `ROLE_SUPER_ADMIN`: Acceso transversal a todas las empresas.
 
 ---
 
 ## 🏢 Estrategia Multi-tenant
 
-El sistema utiliza una estrategia de **Discriminator Column** (Columna discriminadora).
+El sistema utiliza una estrategia de **tenant por referencia explícita** basada en `enterprise_id`.
 
 - Todas las tablas principales (`users`, `appointments`, `services`) tienen una columna `enterprise_id`.
 - Cada petición autenticada se asocia a un usuario que pertenece a una `Enterprise`.
-- **Seguridad**: Hibernate Filters o cláusulas `WHERE` obligatorias en consultas aseguran que un usuario de la Empresa A nunca vea datos de la Empresa B.
+- **Seguridad**: el aislamiento no depende de magia de ORM. Se aplica con `@PreAuthorize`, `SecurityService`, métodos de repositorio filtrados y validaciones explícitas en servicios críticos como creación de citas.
 
 > [Siguiente: Backend](./04-backend.md)

@@ -27,7 +27,7 @@ El proyecto utiliza un stack moderno y robusto, priorizando el tipado estático 
 
 ### Backend
 
-- **Lenguaje**: Java 17
+- **Lenguaje**: Java 21
 - **Framework**: Spring Boot 3 (Web, Data JPA, Security)
 - **Base de Datos**: PostgreSQL 15
 - **Seguridad**: JWT (JSON Web Tokens)
@@ -35,9 +35,9 @@ El proyecto utiliza un stack moderno y robusto, priorizando el tipado estático 
 ### Frontend
 
 - **Lenguaje**: TypeScript
-- **Framework**: React 18 (Vite)
+- **Framework**: React 19 (Vite)
 - **Estilos**: Tailwind CSS
-- **Estado/Data**: React Query / Context API
+- **Estado/Data**: Context API para autenticación y fetch directo por servicio/página
 
 ### Infraestructura
 

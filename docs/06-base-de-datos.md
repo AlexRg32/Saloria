@@ -18,7 +18,7 @@ erDiagram
 
     User ||--o{ Appointment : "realiza (empleado)"
     Customer ||--o{ Appointment : "recibe"
-    ServiceOffering }|--o{ Appointment : "contiene"
+    ServiceOffering ||--o{ Appointment : "se agenda en"
 ```
 
 ### Tabla `enterprises` (Tenant)
@@ -37,7 +37,9 @@ Empleados y Administradores que acceden al panel de control.
 - `id` (PK).
 - `enterprise_id` (FK): A qué empresa pertenece.
 - `email`: Credencial de acceso.
-- `role`: (`ADMIN`, `EMPLOYEE`).
+- `role`: (`SUPER_ADMIN`, `ADMIN`, `EMPLEADO`, `CLIENTE`).
+- `active`: Controla si puede autenticarse.
+- `archived`: Mantiene histórico sin aparecer en flujos activos.
 
 ### Tabla `customers` (Clientes Finales)
 
@@ -56,9 +58,9 @@ El núcleo transaccional.
 - `customer_id` (FK): Quién recibe el servicio.
 - `employee_id` (FK): Quién lo realiza (User).
 - `service_id` (FK): Qué se realiza.
-- `start_time`: Timestamp inicio.
-- `end_time`: Timestamp fin.
+- `date`: Fecha/hora de inicio de la cita.
 - `status`: (`PENDING`, `CONFIRMED`, `COMPLETED`, `CANCELLED`).
+- `paid`, `payment_method`, `paid_at`: Estado de cobro.
 
 ### Tabla `service_offerings` (Catálogo)
 
@@ -66,6 +68,7 @@ El núcleo transaccional.
 - `name`: Nombre del servicio.
 - `duration_minutes`: Duración estándar (30, 60, etc).
 - `price`: Precio base.
+- `deleted`: Borrado lógico para retirar servicios del catálogo.
 
 ### Tabla `working_hours` (Horarios)
 

@@ -42,19 +42,20 @@ El corazón de la gestión diaria.
 
 ### 1. Portal de Reserva Online
 
-Los clientes pueden acceder a la página pública de tu negocio para reservar sin necesidad de llamar.
+Los clientes pueden acceder a la página pública de tu negocio para descubrir servicios, ver el equipo y consultar horarios sin necesidad de llamar.
 
 ### 2. Proceso de Reserva
 
-1. **Seleccionar Servicio**: Elige el servicio deseado (e.g. Corte de Caballero).
-2. **Elegir Profesional**: Selecciona su peluquero de confianza (o "Cualquiera" para primera disponibilidad).
-3. **Fecha y Hora**: Visualiza los huecos disponibles en tiempo real.
-4. **Confirmación**: Recibe un resumen de la cita.
+1. **Explorar negocio**: Entra desde el marketplace o el buscador público.
+2. **Iniciar sesión como cliente**: La reserva online actual requiere una cuenta `CLIENTE` autenticada.
+3. **Seleccionar Servicio y Profesional**: Elige el servicio y el empleado disponibles.
+4. **Fecha y Hora**: Reserva usando los horarios públicos configurados por el negocio.
+5. **Confirmación**: La cita queda asociada al historial del cliente.
 
 ### 3. Mi Perfil
 
 - **Mis Citas**: Consulta las próximas citas y el historial de servicios pasados.
-- **Datos Personales**: Actualiza tu información de contacto.
+- **Resumen de Cuenta**: Visualiza nombre, correo, rol y accesos rápidos a historial y búsqueda.
 
 ---
 

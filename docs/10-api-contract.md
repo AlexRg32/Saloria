@@ -1,9 +1,9 @@
 # 📑 Contratos de API (API Contract)
 
-Este documento detalla los endpoints expuestos por el backend de **Saloria**. Sirve como contrato de integración para el desarrollo del Client-Side (Frontend o Apps Móviles).
+Este documento detalla los endpoints expuestos por el backend de **Saloria**. Sirve como contrato de integración para el desarrollo del client-side (frontend o apps móviles).
 
-> **Nota de Seguridad**: Todos los endpoints que no sean explícitamente públicos requieren la inclusión de un token JWT válido en las cabeceras de la petición: `Authorization: Bearer <JWT_TOKEN>`.
-> Además, tienen **protección contra IDOR automática**: Se verifica rigurosamente mediante `SecurityService` que el ID del usuario o el ID de la empresa en cada endpoint corresponda legítimamente al contexto de la empresa del token JWT proporcionado.
+> **Nota de Seguridad**: Todos los endpoints que no sean explícitamente públicos requieren un token JWT válido en la cabecera `Authorization: Bearer <JWT_TOKEN>`.
+> Además, la autorización aplica controles multi-tenant y de ownership mediante `SecurityService`, `@PreAuthorize` y validaciones de servicio. No basta con conocer un ID para operar sobre recursos ajenos.
 
 ---
 
@@ -16,41 +16,55 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 - **Método:** `POST /auth/register`
 - **Autorización:** *Público*
 - **Descripción:** Crea una nueva empresa junto con su cuenta de administrador inicial en un solo paso.
-- **Body Esperado:** Objeto `RegisterRequest` (Datos de empresa + Usuario Admin).
-- **Respuesta:** `AuthResponse` (Contiene `access_token`).
+- **Body Esperado:** `RegisterRequest`
+- **Respuesta:** `AuthResponse` (contiene `token`)
 
 ### Iniciar sesión
 
 - **Método:** `POST /auth/login`
 - **Autorización:** *Público*
-- **Descripción:** Autentica a un usuario usando email y contraseña, y devuelve el token JWT de acceso.
-- **Body Esperado:** Objeto `AuthRequest` (`email`, `password`).
-- **Respuesta:** `AuthResponse` (Contiene `access_token` y detalles del usuario).
+- **Descripción:** Autentica a un usuario usando email y contraseña.
+- **Body Esperado:** `AuthRequest`
+- **Respuesta:** `AuthResponse` (contiene `token`)
 
 ---
 
 ## 🌍 2. Público (`PublicController`)
 
 **Base Path:** `/api/public`
-**Propósito:** Endpoints de acceso 100% público requeridos para el "Client Portal" (reservas de clientes sin cuenta previa).
+**Propósito:** Endpoints de lectura pública para marketplace, perfil público y horarios visibles del negocio.
 
-### Obtener empresa por Slug
+### Directorio público de empresas
+
+- **Método:** `GET /api/public/enterprises`
+- **Descripción:** Lista negocios visibles en el marketplace y permite filtrar con `?q=` por nombre, dirección o servicios.
+- **Respuesta:** Lista de `PublicEnterpriseSummaryResponse`
+
+### Obtener empresa por slug
 
 - **Método:** `GET /api/public/enterprises/slug/{slug}`
-- **Descripción:** Recupera la información pública de una empresa a partir de su identificador único (slug).
-- **Respuesta:** `EnterpriseResponse`.
+- **Descripción:** Recupera la información pública de una empresa a partir de su `slug`.
+- **Respuesta:** `EnterpriseResponse`
 
 ### Listar servicios de empresa
 
 - **Método:** `GET /api/public/enterprises/{id}/services`
 - **Descripción:** Obtiene el catálogo completo de servicios activos que ofrece una empresa.
-- **Respuesta:** Lista de `ServiceOfferingResponse`.
+- **Respuesta:** Lista de `ServiceOfferingResponse`
 
 ### Listar empleados de empresa
 
 - **Método:** `GET /api/public/enterprises/{id}/employees`
-- **Descripción:** Obtiene la lista de empleados para que el usuario pueda reservar citas con ellos.
-- **Respuesta:** Lista de `UserResponse`.
+- **Descripción:** Obtiene la lista de empleados visibles para reserva.
+- **Respuesta:** Lista de `UserResponse`
+
+### Consultar horarios públicos de empresa
+
+- **Método:** `GET /api/public/enterprises/{id}/working-hours`
+- **Descripción:** Devuelve los horarios generales publicados de la empresa para el perfil público.
+- **Respuesta:** Lista de `WorkingHourDTO`
+
+> Importante: estos endpoints son públicos y de solo lectura. La creación real de una reserva requiere un usuario autenticado con rol `CLIENTE`.
 
 ---
 
@@ -62,30 +76,30 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 
 - **Método:** `GET /api/users/{enterpriseId}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Descripción:** Obtiene la lista de todos los usuarios (empleados/admins) asociados al ID de una empresa.
-- **Respuesta:** Lista de `UserResponse`.
+- **Descripción:** Obtiene la lista de usuarios operativos asociados a la empresa.
+- **Respuesta:** Lista de `UserResponse`
 
 ### Crear nuevo usuario
 
 - **Método:** `POST /api/users`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Descripción:** Permite a un administrador registrar a un nuevo empleado dentro de su empresa.
-- **Body Esperado:** Entidad `User`.
-- **Respuesta:** `UserResponse`.
+- **Descripción:** Permite registrar un nuevo empleado dentro de la empresa.
+- **Body Esperado:** `CreateUserRequest`
+- **Respuesta:** `UserResponse`
 
 ### Actualizar usuario
 
 - **Método:** `PUT /api/users/{id}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Descripción:** Actualiza los datos personales, rol o información profesional de un usuario existente.
-- **Body Esperado:** Entidad `User`.
-- **Respuesta:** `UserResponse`.
+- **Descripción:** Actualiza datos personales, rol o información profesional de un usuario existente.
+- **Body Esperado:** `UpdateUserRequest`
+- **Respuesta:** `UserResponse`
 
-### Eliminar usuario
+### Archivar usuario
 
 - **Método:** `DELETE /api/users/{id}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Descripción:** Realiza un borrado lógico (soft delete) del usuario desvinculándolo del panel activo.
+- **Descripción:** Archiva el usuario (`active=false`, `archived=true`) sin destruir histórico de citas y clientes.
 
 ---
 
@@ -96,29 +110,33 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 ### Listar todas las empresas
 
 - **Método:** `GET /api/enterprises`
-- **Descripción:** Obtiene un directorio de todas las empresas afiliadas a la plataforma.
+- **Descripción:** Obtiene un directorio de empresas registradas.
+- **Respuesta:** Lista de `EnterpriseResponse`
 
 ### Crear nueva empresa internamente
 
 - **Método:** `POST /api/enterprises`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Body:** Entidad `Enterprise`.
+- **Body Esperado:** `EnterpriseRequest`
+- **Respuesta:** `EnterpriseResponse`
 
 ### Detalles de empresa
 
 - **Método:** `GET /api/enterprises/{id}`
-- **Respuesta:** `EnterpriseResponse`.
+- **Respuesta:** `EnterpriseResponse`
 
 ### Actualizar empresa
 
 - **Método:** `PUT /api/enterprises/{id}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Body:** Entidad `Enterprise`.
+- **Body Esperado:** `EnterpriseRequest`
+- **Respuesta:** `EnterpriseResponse`
 
 ### Empleados internos
 
 - **Método:** `GET /api/enterprises/{id}/employees`
 - **Descripción:** Obtiene empleados internos de la empresa.
+- **Respuesta:** Lista de `UserResponse`
 
 ---
 
@@ -130,8 +148,8 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 
 - **Método:** `GET /api/dashboard/stats/{enterpriseId}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Descripción:** Calcula total de citas del día, total de ingresos estimados del mes y estadísticas demográficas.
-- **Respuesta:** `DashboardStatsDTO`.
+- **Descripción:** Calcula total de citas del día, ingresos estimados del mes y estadísticas del negocio.
+- **Respuesta:** `DashboardStatsDTO`
 
 ---
 
@@ -142,26 +160,26 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 ### Listar catálogo de la empresa
 
 - **Método:** `GET /api/services/{enterpriseId}`
-- **Respuesta:** Lista de `ServiceOfferingResponse`.
+- **Respuesta:** Lista de `ServiceOfferingResponse`
 
 ### Crear nuevo servicio
 
 - **Método:** `POST /api/services`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Descripción:** Crea un nuevo servicio (soporta subida de imágenes via multipart).
-- **Body/Form-data:** `service` (JSON string) e `image` (MultipartFile opcional).
-- **Respuesta:** `ServiceOfferingResponse`.
+- **Descripción:** Crea un nuevo servicio y permite subir una imagen opcional.
+- **Body/Form-data:** `service` (`ServiceOfferingRequest`, serializado como JSON) e `image` (`MultipartFile` opcional)
+- **Respuesta:** `ServiceOfferingResponse`
 
 ### Detalle de servicio
 
 - **Método:** `GET /api/services/{enterpriseId}/{id}`
-- **Respuesta:** `ServiceOfferingResponse`.
+- **Respuesta:** `ServiceOfferingResponse`
 
 ### Eliminar servicio
 
 - **Método:** `DELETE /api/services/{enterpriseId}/{id}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Descripción:** Borra un servicio existente.
+- **Descripción:** Retira el servicio del catálogo mediante borrado lógico (`deleted=true`).
 
 ---
 
@@ -169,46 +187,53 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 
 **Base Path:** `/api/appointments`
 
-### Crear cita internamente
+### Crear cita
 
 - **Método:** `POST /api/appointments`
-- **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Body:** `CreateAppointmentRequest`.
+- **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`, `ROLE_CLIENTE`
+- **Body Esperado:** `CreateAppointmentRequest`
+- **Descripción:** Los perfiles admin crean citas internas para su empresa. Los clientes autenticados solo pueden crear reservas para su propio `userId`.
+- **Respuesta:** `AppointmentResponse`
 
-### Mis Citas
+### Mis citas
 
 - **Método:** `GET /api/appointments/me`
-- **Descripción:** Lista las próximas citas del usuario autenticado.
+- **Descripción:** Lista las citas del usuario autenticado.
+- **Respuesta:** Lista de `AppointmentResponse`
 
 ### Listar todas las citas
 
 - **Método:** `GET /api/appointments?enterpriseId={id}`
 - **Descripción:** Recupera todas las reservas registradas en una empresa.
+- **Respuesta:** Lista de `AppointmentResponse`
 
 ### Citas por empleado
 
 - **Método:** `GET /api/appointments/employee/{employeeId}`
-- **Descripción:** Útil en el modo vista de calendario, lista citas de un empleado específico.
+- **Descripción:** Lista las citas de un empleado específico.
+- **Respuesta:** Lista de `AppointmentResponse`
 
-### Checkout (Pagar Cita)
+### Checkout (Pagar cita)
 
 - **Método:** `POST /api/appointments/{id}/checkout`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Body:** `{"paymentMethod": "CASH | CARD | TRANSFER"}`
-- **Descripción:** Cambia el estado de la cita a COMPLETADA y registra el pago.
+- **Body:** `{"paymentMethod":"CASH|CARD|TRANSFER"}`
+- **Descripción:** Cambia el estado de la cita a completada y registra el pago.
+- **Respuesta:** `AppointmentResponse`
 
 ### Transacciones
 
-- **Método:** `GET /api/appointments/transactions?enterpriseId={id}&start={isoDate}&end={isoDate}`
+- **Método:** `GET /api/appointments/transactions?enterpriseId={id}&start={isoDateTime}&end={isoDateTime}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
-- **Descripción:** Filtro de citas pasadas y cobradas para historial y contabilidad.
+- **Descripción:** Devuelve citas pasadas filtradas por rango temporal para historial y contabilidad.
+- **Respuesta:** Lista de `AppointmentResponse`
 
-### Resumen de facturación (Billing)
+### Resumen de facturación
 
 - **Método:** `GET /api/appointments/billing-summary?enterpriseId={id}`
 - **Autorización:** `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`
 - **Descripción:** Suma el total ingresado a partir de las citas cobradas.
-- **Respuesta:** `BillingSummaryDTO`.
+- **Respuesta:** `BillingSummaryDTO`
 
 ---
 
@@ -220,18 +245,20 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 
 - **Método:** `GET /api/working-hours/enterprise/{enterpriseId}`
 - **Descripción:** Devuelve los horarios de apertura globales.
-- **Respuesta:** Lista de `WorkingHourDTO`.
+- **Respuesta:** Lista de `WorkingHourDTO`
 
 ### Horario de empleado
 
 - **Método:** `GET /api/working-hours/user/{userId}`
 - **Descripción:** Consulta las horas laborables específicas de un empleado.
+- **Respuesta:** Lista de `WorkingHourDTO`
 
-### Guardar horarios masivamente (Batch)
+### Guardar horarios masivamente (batch)
 
 - **Método:** `PUT /api/working-hours/batch`
 - **Descripción:** Reemplaza o inserta jornada laboral en lote.
-- **Body:** Lista de `WorkingHourDTO`.
+- **Body:** Lista de `WorkingHourDTO`
+- **Respuesta:** Lista de `WorkingHourDTO`
 
 ---
 
@@ -239,21 +266,30 @@ Este documento detalla los endpoints expuestos por el backend de **Saloria**. Si
 
 **Base Path:** `/api/customers`
 
-### Listar Clientes
+### Listar clientes
 
 - **Método:** `GET /api/customers/enterprise/{enterpriseId}`
-- **Descripción:** Listado paginado/completo de clientes de la empresa.
-- **Respuesta:** Lista de `CustomerResponse`.
+- **Descripción:** Listado de clientes de la empresa.
+- **Respuesta:** Lista de `CustomerResponse`
 
-### Expediente y Detalles de Cliente
+### Expediente y detalles de cliente
 
 - **Método:** `GET /api/customers/{id}`
 - **Descripción:** Obtiene los detalles de contacto e historial de citas vinculadas.
-- **Respuesta:** `CustomerDetailResponse`.
+- **Respuesta:** `CustomerDetailResponse`
 
-### Actualizar Cliente
+### Actualizar cliente
 
 - **Método:** `PATCH /api/customers/{id}`
 - **Descripción:** Actualiza datos parciales del cliente, como notas internas o etiquetas.
-- **Body:** `UpdateCustomerRequest`.
-- **Respuesta:** `CustomerResponse`.
+- **Body:** `UpdateCustomerRequest`
+- **Respuesta:** `CustomerResponse`
+
+---
+
+## 📝 Notas de Integración
+
+- El marketplace y la búsqueda pública consumen `GET /api/public/enterprises`.
+- El perfil público consume `slug`, `services`, `employees` y `working-hours`.
+- El CTA `Reservar Ahora` redirige a login si el usuario no está autenticado.
+- La reserva online pública actual no soporta invitados anónimos: requiere cuenta `CLIENTE`.

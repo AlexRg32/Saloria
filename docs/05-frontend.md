@@ -1,6 +1,6 @@
 # 🖼 Frontend (Cliente Web)
 
-La aplicación web está construida con **React 18** y **TypeScript**, utilizando **Vite** como empaquetador para una experiencia de desarrollo ultrarrápida.
+La aplicación web está construida con **React 19** y **TypeScript**, utilizando **Vite** como empaquetador para una experiencia de desarrollo ultrarrápida.
 
 ## 📂 Organización del Proyecto
 
@@ -8,19 +8,26 @@ El código fuente en `src/` sigue una estructura híbrida basada en **Features**
 
 ```plaintext
 src/
-├── features/           # Módulos funcionales autocontenidos
-│   ├── auth/           # Login, Registro, Contexto de Auth
-│   └── client-portal/  # Página pública de reserva para clientes
-├── components/         # Componentes compartidos o específicos de dominio
-│   ├── ui/             # Botones, Modales, Inputs (Design System base)
-│   ├── calendar/       # Componentes complejos de agenda
-│   ├── appointments/   # Formularios de creación/edición de citas
-│   ├── customers/      # Listados y detalles de clientes
-│   └── settings/       # Configuración de servicios y empleados
-├── hooks/              # Custom Hooks (useAuth, useAppointments)
-├── context/            # Contextos globales (ThemeContext, etc.)
-├── types/              # Definiciones de tipos TypeScript compartidas
-└── utils/              # Funciones auxiliares (fechas, formateo moneda)
+├── components/         # UI y módulos de dominio reutilizables
+│   ├── appointments/
+│   ├── billing/
+│   ├── customers/
+│   ├── dashboard/
+│   ├── employees/
+│   ├── layout/
+│   ├── marketplace/
+│   ├── services/
+│   ├── settings/
+│   └── ui/
+├── features/
+│   ├── auth/           # Login, registro y contexto de autenticación
+│   └── client-portal/  # Hero, cards y flujo público/cliente
+├── lib/                # Axios y utilidades base
+├── pages/              # Rutas principales de la SPA
+├── services/           # Acceso a API por dominio
+├── test/               # Setup y utilidades de test
+├── types/              # Tipos compartidos
+└── utils/              # Helpers de formato y fechas
 ```
 
 ## 🛠 Tecnologías Clave
@@ -28,8 +35,9 @@ src/
 - **React Router**: Gestión de rutas (`/login`, `/dashboard`, `/agenda`).
 - **Tailwind CSS**: Framework de utilidades para estilos rápidos y consistentes.
 - **React Hook Form**: Gestión eficiente de formularios grandes.
-- **Zod**: Validación de esquemas y datos.
-- **TanStack Query (React Query)**: Gestión de estado asíncrono (cacheo de datos del servidor).
+- **Axios**: Cliente HTTP centralizado para hablar con la API.
+- **framer-motion**: Animaciones y transiciones del portal cliente.
+- **Zod**: Dependencia disponible para validaciones tipadas puntuales.
 - **Lucide React**: Librería de iconos vectoriales ligeros.
 - **date-fns**: Manipulación robusta de fechas y horas.
 
@@ -54,16 +62,18 @@ El componente más complejo de la aplicación.
 
 ### 3. Portal del Cliente (`features/client-portal`)
 
-Una aplicación dentro de la aplicación.
+La capa B2C ya está integrada dentro de la misma SPA.
 
-- Ruta pública accesible sin login previo.
-- Flujo paso a paso (Wizard) para completar una reserva.
+- `ClientPortal`: portada pública con destacados, negocios cercanos y citas del cliente si está autenticado.
+- `SearchPage`: buscador real conectado al directorio público.
+- `BarbershopProfilePage`: perfil público del negocio con servicios, equipo y horarios.
+- `PublicBookingModal`: reserva online para usuarios con cuenta `CLIENTE`.
 
 ## 🔄 Gestión de Estado
 
-La aplicación utiliza dos niveles de estado:
+La aplicación utiliza dos niveles principales de estado:
 
-1. **Estado de Servidor (React Query)**: Datos de citas, usuarios y servicios. Se invalida automáticamente tras mutaciones (`POST`, `PUT`, `DELETE`).
-2. **Estado de UI (Local State/Context)**: Modal abierto/cerrado, filtro de calendario seleccionado, usuario autenticado (AuthContext).
+1. **Estado de sesión y branding (Context API)**: autenticación, token JWT, usuario actual y branding de la empresa.
+2. **Estado de pantalla (fetch por página/servicio + local state)**: resultados de búsqueda, citas, catálogos, modales y filtros.
 
 > [Siguiente: Base de Datos](./06-base-de-datos.md)

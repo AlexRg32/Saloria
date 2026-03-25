@@ -1,6 +1,6 @@
 # ⚙️ Backend (API & Lógica de Servidor)
 
-El backend de la aplicación está construido con Java 17 y Spring Boot 3, siguiendo principios RESTful y una arquitectura de capas limpia.
+El backend de la aplicación está construido con Java 21 y Spring Boot 3, siguiendo principios RESTful y una arquitectura de capas limpia.
 
 ## 📂 Estructura de Paquetes
 
@@ -27,7 +27,8 @@ La seguridad está gestionada por **Spring Security**.
 ### Archivos Clave
 
 - `SecurityConfig.java`: Configuración de cadenas de filtros de seguridad.
-- `JwtService.java`: Generación y validación de tokens JWT.
+- `JwtUtil.java`: Generación y validación de tokens JWT.
+- `SecurityService.java`: Reglas de autorización multi-tenant y ownership checks.
 
 ## 📡 API Endpoints y Contratos
 
@@ -52,8 +53,12 @@ Las migraciones de bases de datos son controladas por **Flyway**.
 - **Estrategia de Ids**: `GenerationType.IDENTITY` (Auto-increment).
 - **Relaciones**:
   - `Enterprise` 1:N `User` (Empleados/Admins)
-  - `User` 1:N `Appointment` (Como empleado o cliente)
-  - `ServiceOffering` N:M `Appointment` (A través de tabla intermedia o relación directa)
-- **Soft Deletes**: Implementados en entidades críticas para evitar pérdida accidental de datos.
+  - `User` 1:N `Appointment` (Como empleado)
+  - `Customer` 1:N `Appointment`
+  - `ServiceOffering` 1:N `Appointment`
+- **Archivado / Soft Delete**:
+  - `User` conserva histórico mediante `archived=true` y `active=false`.
+  - `ServiceOffering` se retira con `deleted=true`.
+  - La autenticación y los listados activos excluyen usuarios archivados o inactivos.
 
 > [Siguiente: Frontend](./05-frontend.md)
