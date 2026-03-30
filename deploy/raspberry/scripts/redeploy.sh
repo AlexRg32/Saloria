@@ -45,11 +45,22 @@ for profile in ${DEPLOY_PROFILES//,/ }; do
   fi
 done
 
-docker compose \
-  --env-file "${ENV_FILE}" \
-  -f "${DEPLOY_DIR}/docker-compose.prod.yml" \
-  "${profile_args[@]}" \
-  up -d --build --remove-orphans
+run_compose_up() {
+  docker compose \
+    --env-file "${ENV_FILE}" \
+    -f "${DEPLOY_DIR}/docker-compose.prod.yml" \
+    "${profile_args[@]}" \
+    up -d --build --remove-orphans
+}
+
+if ! run_compose_up; then
+  echo "Docker Compose build failed on Raspberry. Cleaning builder state and retrying once without BuildKit..."
+  docker buildx stop >/dev/null 2>&1 || true
+  docker buildx rm --all-inactive --force >/dev/null 2>&1 || true
+  docker builder prune --all --force >/dev/null 2>&1 || true
+
+  COMPOSE_DOCKER_CLI_BUILD=0 DOCKER_BUILDKIT=0 run_compose_up
+fi
 
 for attempt in $(seq 1 "${HEALTHCHECK_ATTEMPTS}"); do
   if "${DEPLOY_DIR}/scripts/healthcheck.sh" "${APP_API_BASE_URL:-http://localhost:8080}"; then
