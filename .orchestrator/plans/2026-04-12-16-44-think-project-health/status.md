@@ -4,6 +4,8 @@
 | Investigation  | done |
 | Design         | done |
 | Plan           | done |
-| Implementation | not_applicable |
+| Implementation | in_progress |
 
-Created: 2026-04-12T16:44:07+02:00
+Last updated: 2026-04-13T16:58:00+02:00
+Current task: Task 2 & 3 (Verifying runner and tracing failure)
+Completed: Task 1, 4, 5, 6.
